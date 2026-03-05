@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>חדר הבריחה — אולפן 7</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;900&family=VT323&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- External lib: PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <!-- App styles -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- Combo flash overlay -->
+<div id="combo-flash"></div>
+
+<!-- ================================================================
+     INTRO SCREEN
+================================================================ -->
+<div class="screen active" id="screen-intro">
+
+  <h1 class="glitch-title">STUDIO_7</h1>
+  <p class="subtitle">אולפן הפודקאסט הסודי &nbsp;//&nbsp; LEVEL: CLASSIFIED</p>
+
+  <!-- Agent name -->
+  <div class="name-wrap">
+    <span class="field-label">// IDENTIFY YOURSELF</span>
+    <div class="name-row">
+      <input class="name-input" id="player-name-input" type="text" maxlength="20"
+        placeholder="שם הסוכן..." autocomplete="off" oninput="onNameInput()">
+      <div class="name-pfx">_</div>
+    </div>
+  </div>
+
+  <!-- Category selector -->
+  <div class="cat-wrap">
+    <span class="field-label">// CHOOSE YOUR MISSION</span>
+    <div class="cat-grid" id="cat-grid">
+
+      <div class="cat-card" style="--card-color:#cc88ff" data-cat="acoustic" onclick="selectCat(this)">
+        <div class="cat-card-check"></div>
+        <span class="cat-card-icon">🏠</span>
+        <div class="cat-card-name" style="color:#cc88ff">אקוסטיקה של אולפן</div>
+        <div class="cat-card-desc">הד, חדר חי, bass trap, ספוגים, מזגן, מיקום</div>
+        <div class="cat-card-count" style="color:#cc88ff">10 חידות</div>
+      </div>
+
+      <div class="cat-card" style="--card-color:#00ff88" data-cat="mic" onclick="selectCat(this)">
+        <div class="cat-card-check"></div>
+        <span class="cat-card-icon">🎙️</span>
+        <div class="cat-card-name" style="color:#00ff88">סוגי מיקרופונים</div>
+        <div class="cat-card-desc">דינמי, קונדנסר, דש, phantom power, XLR, USB</div>
+        <div class="cat-card-count" style="color:#00ff88">10 חידות</div>
+      </div>
+
+      <div class="cat-card" style="--card-color:#ffaa00" data-cat="mixer" onclick="selectCat(this)">
+        <div class="cat-card-check"></div>
+        <span class="cat-card-icon">🎚️</span>
+        <div class="cat-card-name" style="color:#ffaa00">תפעול מיקסר</div>
+        <div class="cat-card-desc">gain, fader, EQ, pan, mute, compressor, clip</div>
+        <div class="cat-card-count" style="color:#ffaa00">10 חידות</div>
+      </div>
+
+      <div class="cat-card" style="--card-color:#ff6688" data-cat="mic_placement" onclick="selectCat(this)">
+        <div class="cat-card-check"></div>
+        <span class="cat-card-icon">🗣️</span>
+        <div class="cat-card-name" style="color:#ff6688">מיקום ושימוש במיק</div>
+        <div class="cat-card-desc">מרחק, proximity effect, pop filter, דש, Sound Check</div>
+        <div class="cat-card-count" style="color:#ff6688">10 חידות</div>
+      </div>
+
+      <div class="cat-card" style="--card-color:#00ccff" data-cat="video" onclick="selectCat(this)">
+        <div class="cat-card-check"></div>
+        <span class="cat-card-icon">📹</span>
+        <div class="cat-card-name" style="color:#00ccff">וידאוקאסט קרוס</div>
+        <div class="cat-card-desc">cross setup, 180°, clapper, frame, תאורה, DOF</div>
+        <div class="cat-card-count" style="color:#00ccff">10 חידות</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Audio controls (intro) -->
+  <div class="audio-panel">
+    <div class="audio-panel-title">AUDIO SETTINGS</div>
+    <div class="vol-row">
+      <span class="vol-icon">🎵</span>
+      <span class="vol-label">מוזיקה</span>
+      <input type="range" min="0" max="100" value="40" class="vol-slider ms mv-slider" oninput="setMVol(this.value)">
+      <span class="vol-val mv mvl">40</span>
+      <button class="mute-btn mm-btn" onclick="toggleMM()">MUTE</button>
+    </div>
+    <div class="vol-row">
+      <span class="vol-icon">🔊</span>
+      <span class="vol-label">אפקטים</span>
+      <input type="range" min="0" max="100" value="80" class="vol-slider fs fv-slider" oninput="setFVol(this.value)">
+      <span class="vol-val fv fvl">80</span>
+      <button class="mute-btn fm-btn" onclick="toggleFM()">MUTE</button>
+    </div>
+  </div>
+
+  <!-- Terminal block -->
+  <div class="intro-terminal">
+    <div class="terminal-dots">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+    </div>
+    <div class="tl"><span class="p">$ </span><span class="c">init --studio7 --level=classified</span></div>
+    <div class="tl out">LOADING MISSION DATA... <span class="blink">▋</span></div>
+    <div class="tl warn">⚠ WARNING: 90 seconds per room. 3 attempts per lock.</div>
+    <div class="tl err">! BREACH DETECTED — agents needed immediately.</div>
+  </div>
+
+  <button class="btn-start" id="btn-start" onclick="tryStart()" disabled>
+    [ START MISSION ]
+  </button>
+  <p class="hint-txt">הכניסו שם ובחרו קטגוריה כדי להתחיל</p>
+
+</div><!-- /screen-intro -->
+
+
+<!-- ================================================================
+     GAME SCREEN
+================================================================ -->
+<div class="screen" id="screen-game">
+
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-grp">
+
+      <div class="hud-item">
+        <div class="hud-lbl">סוכן</div>
+        <div class="hud-player" id="hud-player">—</div>
+      </div>
+
+      <div class="hud-item">
+        <div class="hud-lbl">קטגוריה</div>
+        <div class="hud-cat-badge" id="hud-cat-badge">—</div>
+      </div>
+
+      <div class="hud-item">
+        <div class="hud-lbl">חדר</div>
+        <div class="hud-val" id="hud-room">1/10</div>
+      </div>
+
+      <div class="hud-item">
+        <div class="hud-lbl">ניקוד</div>
+        <div class="hud-val" id="hud-val-score">0</div>
+      </div>
+
+      <div class="hud-item">
+        <div class="hud-lbl">נכונות</div>
+        <div class="hud-val" style="color:var(--glow)" id="hud-val-correct">0</div>
+      </div>
+
+    </div>
+
+    <div class="hud-grp">
+
+      <div class="hud-item">
+        <div class="hud-lbl">ניסיונות</div>
+        <div class="lights">
+          <div class="light"></div>
+          <div class="light"></div>
+          <div class="light"></div>
+        </div>
+      </div>
+
+      <div class="hud-item">
+        <div class="hud-lbl">זמן</div>
+        <div class="timer-val" id="timer-val">1:30</div>
+      </div>
+
+      <div class="hud-prog-wrap">
+        <div class="hud-lbl">התקדמות</div>
+        <div class="hud-prog-track">
+          <div class="hud-prog-fill" id="hud-prog-fill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <button class="hud-audio-btn" onclick="toggleAP()">🎵</button>
+
+    </div>
+  </div><!-- /hud -->
+
+  <!-- Main game area -->
+  <div class="room-wrap">
+
+    <!-- Scene (left) -->
+    <div class="scene">
+      <div class="room-bg-num" id="room-bg-num">01</div>
+      <div class="riddle-box" id="riddle-box">
+        <div class="cm cm-tl"></div>
+        <div class="cm cm-tr"></div>
+        <div class="cm cm-bl"></div>
+        <div class="cm cm-br"></div>
+        <div class="q-cat" id="q-cat">// LOADING...</div>
+        <div class="q-flavor" id="q-flavor"></div>
+        <div class="q-prop" id="q-prop"></div>
+        <div class="q-text" id="q-text">טוען...</div>
+      </div>
+    </div>
+
+    <!-- Answer panel (right) -->
+    <div class="answer-panel">
+      <div class="panel-title">// בחרו תשובה</div>
+      <div id="answers"></div>
+      <div class="fb-box" id="fb-box">
+        <div class="fb-lbl"></div>
+        <div class="fb-txt"></div>
+      </div>
+      <button class="btn-next" id="btn-next" onclick="nextQ()">[ דלת הבאה ← ]</button>
+    </div>
+
+  </div><!-- /room-wrap -->
+
+  <!-- Floating audio panel (in-game) -->
+  <div class="audio-float" id="audio-float">
+    <button class="af-close" onclick="toggleAP()">✕</button>
+    <div class="audio-float-title">🎵 AUDIO</div>
+    <div class="vol-row">
+      <span class="vol-icon">🎵</span>
+      <span class="vol-label">מוזיקה</span>
+      <input type="range" min="0" max="100" value="40" class="vol-slider ms mv-slider" oninput="setMVol(this.value)">
+      <span class="vol-val mv mvl">40</span>
+      <button class="mute-btn mm-btn" onclick="toggleMM()">MUTE</button>
+    </div>
+    <div class="vol-row">
+      <span class="vol-icon">🔊</span>
+      <span class="vol-label">אפקטים</span>
+      <input type="range" min="0" max="100" value="80" class="vol-slider fs fv-slider" oninput="setFVol(this.value)">
+      <span class="vol-val fv fvl">80</span>
+      <button class="mute-btn fm-btn" onclick="toggleFM()">MUTE</button>
+    </div>
+  </div>
+
+</div><!-- /screen-game -->
+
+
+<!-- ================================================================
+     RESULT SCREEN
+================================================================ -->
+<div class="screen" id="screen-result">
+  <div class="result-card">
+    <div class="cm cm-tl"></div>
+    <div class="cm cm-tr"></div>
+    <div class="cm cm-bl"></div>
+    <div class="cm cm-br"></div>
+
+    <div class="result-banner">
+      <div class="result-title" id="res-title">ESCAPED!</div>
+      <div class="result-player" id="res-player"></div>
+      <div class="result-sub" id="res-sub"></div>
+    </div>
+
+    <div class="result-body">
+      <div class="res-bar-wrap">
+        <div class="res-bar-lbl">
+          <span class="ll">ציון כולל</span>
+          <span class="lr" id="res-pct">--</span>
+        </div>
+        <div class="res-track">
+          <div class="res-fill" id="res-fill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <span class="stat-lbl">// תשובות נכונות</span>
+        <span class="stat-val" style="color:var(--glow)"  id="res-correct">-</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-lbl">// שגיאות</span>
+        <span class="stat-val" style="color:var(--red)"   id="res-wrong">-</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-lbl">// ניקוד סופי</span>
+        <span class="stat-val" style="color:var(--amber)" id="res-score">-</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-lbl">// דירוג</span>
+        <span class="stat-val" style="font-size:18px"     id="res-rank">-</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-lbl">// קטגוריה</span>
+        <span class="stat-val" style="font-size:16px"     id="res-cat">-</span>
+      </div>
+    </div>
+
+    <div class="result-footer">
+      <button class="btn-r"          onclick="restart()">[ נסו שוב ]</button>
+      <button class="btn-r ol"       onclick="shareResult()">[ שתפו תוצאה ]</button>
+      <button class="btn-r pdf-btn"  onclick="downloadPDF()" id="pdf-btn">[ הורד PDF 📄 ]</button>
+    </div>
+
+  </div>
+</div><!-- /screen-result -->
+
+
+<!-- ================================================================
+     SCRIPTS  (סדר טעינה חשוב!)
+================================================================ -->
+<script src="js/audio.js"></script>
+<script src="js/questions.js"></script>
+<script src="js/game.js"></script>
+<script src="js/pdf.js"></script>
+<script src="js/main.js"></script>
+
+</body>
+</html>
