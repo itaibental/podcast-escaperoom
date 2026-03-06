@@ -3,33 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>מבצע קול האדמה 🎙️</title>
+  <title>STUDIO__8</title>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;900&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
-<!-- ================================================================
+<!-- ══════════════════════════════════════════
      INTRO SCREEN
-================================================================ -->
+══════════════════════════════════════════ -->
 <div class="screen active" id="screen-intro">
-
   <div class="intro-hero">
-    <h1 class="glitch-title">EARTH-CAST</h1>
-    <p class="intro-tagline">מבצע קול האדמה • PROJECT EARTH-CAST</p>
+    <h1 class="glitch-title">STUDIO__8</h1>
+    <p class="intro-tagline">המשימה: לעצור את פלישת החייזרים באמצעות פרק פודקאסט משכנע</p>
   </div>
 
   <div class="intro-premise">
     <div class="premise-label">📡 הודעת חירום לסוכנים</div>
-    החייזרים "המשתיקים" הגיעו. הם חושבים שהאנושות היא רק רעש רקע מיותר ביקום.
-    המשימה שלכם: להפיק את הוידאוקאסט האנושי הראשון שישודר ישירות לספינת האם.
-    רק איכות הפקה מושלמת ותוכן כנה ישכנעו אותם שאנחנו ראויים לחיות.
+    החייזרים "המשתיקים" הגיעו. לדעתם, האנושות אינה אלא רעש רקע מיותר ביקום.
+    המשימה שלכם: להפיק את הווידאוקאסט האנושי הראשון שישודר ישירות לספינת האם.
+    רק איכות הפקה מושלמת ותוכן כן ישכנעו אותם שאנחנו ראויים לחיות.
     <strong style="color:var(--glow)"> השעון מתקתק!</strong>
   </div>
 
   <div class="name-wrap">
-    <span class="field-label">🔐 זהות הסוכן</span>
+    <span class="field-label">🔐 זיהוי הסוכן</span>
     <div class="name-row">
       <input class="name-input" id="player-name-input" type="text" maxlength="20"
         placeholder="שם הסוכן..." autocomplete="off" oninput="onNameInput()">
@@ -37,46 +35,59 @@
     </div>
   </div>
 
-  <button class="btn-start" id="btn-start" onclick="tryStart()" disabled>
-    🚀 התחל מבצע
-  </button>
+  <!-- מסלול בחירה -->
+  <div class="mode-select" id="mode-select" style="display:none">
+    <div class="mode-label">🛸 בחרו מסלול</div>
+    <div class="mode-cards">
+      <div class="mode-card" id="mode-full" onclick="selectMode('full')">
+        <div class="mode-card-icon">🚀</div>
+        <div class="mode-card-title">מסלול מלא</div>
+        <div class="mode-card-desc">6 תחנות · 60 שאלות<br>הצילו את האנושות כולה</div>
+      </div>
+      <div class="mode-card" id="mode-single" onclick="selectMode('single')">
+        <div class="mode-card-icon">🎯</div>
+        <div class="mode-card-title">תחנה בודדת</div>
+        <div class="mode-card-desc">10 שאלות · תחנה לבחירה<br>תרגול ממוקד</div>
+      </div>
+    </div>
+    <!-- בחירת תחנה ספציפית (מוסתר בהתחלה) -->
+    <div class="station-picker" id="station-picker" style="display:none">
+      <div class="station-pick-label">בחרו תחנה:</div>
+      <div class="station-pick-grid" id="station-pick-grid"></div>
+    </div>
+  </div>
 
+  <button class="btn-start" id="btn-start" onclick="tryStart()" disabled>
+    🚀 התחל במבצע
+  </button>
 </div>
 
-<!-- ================================================================
-     MISSION BRIEFING SCREEN (between stations)
-================================================================ -->
+<!-- ══════════════════════════════════════════
+     MISSION BRIEFING SCREEN
+══════════════════════════════════════════ -->
 <div class="screen" id="screen-brief">
-
   <div id="station-dots" class="station-dots"></div>
-
   <div class="brief-card" id="brief-card">
     <div class="brief-icon-wrap" id="brief-icon">🏛️</div>
     <div class="brief-title" id="brief-title">טוען...</div>
     <div class="brief-sub" id="brief-sub">תחנה 1 מתוך 6</div>
-
-    <div class="brief-mission-label">🎯 המשימה</div>
+    <div class="brief-mission-label">🎯 המשימה שלכם</div>
     <div class="brief-mission-text" id="brief-mission">...</div>
-
     <div class="brief-hint-box" id="brief-hint">💡 ...</div>
-
     <button class="btn-brief" id="brief-btn" onclick="startStation()">
-      בואו נתחיל! ←
+      יאללה, נתחיל! ←
     </button>
   </div>
-
 </div>
 
-<!-- ================================================================
+<!-- ══════════════════════════════════════════
      GAME SCREEN
-================================================================ -->
+══════════════════════════════════════════ -->
 <div class="screen" id="screen-game">
-
-  <!-- HUD -->
   <div class="hud">
     <div class="hud-item">
       <div class="hud-lbl">סוכן</div>
-      <div class="hud-val" style="font-size:15px;color:var(--glow2)" id="hud-player">—</div>
+      <div class="hud-val" style="font-size:14px;color:var(--glow2)" id="hud-player">—</div>
     </div>
     <div class="hud-item">
       <div class="hud-lbl">תחנה</div>
@@ -89,9 +100,9 @@
     <div class="hud-item">
       <div class="hud-lbl">ניסיונות</div>
       <div class="lights">
-        <div class="light"></div>
-        <div class="light"></div>
-        <div class="light"></div>
+        <div class="light" id="l0"></div>
+        <div class="light" id="l1"></div>
+        <div class="light" id="l2"></div>
       </div>
     </div>
     <div class="hud-item">
@@ -102,7 +113,11 @@
       <div class="hud-lbl">ניקוד</div>
       <div class="hud-val" style="color:var(--amber)" id="hud-score">0</div>
     </div>
-    <div class="hud-item hud-prog-wrap" style="grid-column:span 2">
+    <div class="hud-item">
+      <div class="hud-lbl">פסולות</div>
+      <div class="hud-val" style="color:var(--red)" id="hud-disq">0/8</div>
+    </div>
+    <div class="hud-item hud-prog-wrap" style="grid-column:span 1">
       <div class="hud-lbl" id="hud-station-name">—</div>
       <div class="hud-prog-track">
         <div class="hud-prog-fill" id="hud-prog-fill" style="width:0%"></div>
@@ -110,33 +125,20 @@
     </div>
   </div>
 
-  <!-- Main game area -->
   <div class="game-body">
-
-    <!-- Scene — left (question) -->
     <div class="scene">
       <div class="riddle-box" id="riddle-box">
-
         <div class="q-station-badge" id="q-station-badge">טוען...</div>
-
-        <!-- תרחיש — גדול -->
         <div class="q-scenario" id="q-scenario">טוען תרחיש...</div>
-
-        <!-- שאלה — צבע אחר -->
         <div class="q-text" id="q-text">טוען שאלה...</div>
-
-        <!-- רמזים -->
         <div class="hint-zone">
-          <button class="hint-btn" id="hint-btn" onclick="toggleHints()">💡 רמז</button>
+          <button class="hint-btn" id="hint-btn" onclick="toggleHints()">💡 גלו רמז</button>
           <div class="hint-panel" id="hint-panel">
             <div id="hint-list"></div>
           </div>
         </div>
-
       </div>
     </div>
-
-    <!-- Answer panel — right -->
     <div class="answer-panel">
       <div class="panel-title">// בחרו תשובה</div>
       <div id="answers"></div>
@@ -144,77 +146,117 @@
         <div class="fb-lbl"></div>
         <div class="fb-txt"></div>
       </div>
-      <button class="btn-next" id="btn-next" onclick="nextQ()">השאלה הבאה ←</button>
+      <button class="btn-next" id="btn-next" onclick="nextQ()">לשאלה הבאה ←</button>
     </div>
-
   </div>
-
 </div>
 
-<!-- ================================================================
-     STATION SUCCESS SCREEN
-================================================================ -->
-<div class="screen" id="screen-success">
-  <div class="success-card">
-    <div class="success-icon-big" id="success-icon">🎉</div>
-    <div class="success-msg-text" id="success-msg">...</div>
-    <div class="success-score-txt" id="success-score">ניקוד: 0</div>
-    <button class="btn-success" id="success-btn" onclick="proceedFromSuccess()">
-      תחנה הבאה ←
+<!-- ══════════════════════════════════════════
+     MODAL: שאלה נפסלה (חייזרים מאוכזבים)
+══════════════════════════════════════════ -->
+<div id="disq-modal" class="generic-modal-overlay">
+  <div class="generic-modal-card disq-card">
+    <div class="alien-anim" id="disq-aliens">
+      <span class="alien-emoji sad">👽</span>
+      <span class="alien-emoji sad delay1">👽</span>
+      <span class="alien-emoji sad delay2">👽</span>
+    </div>
+    <div class="disq-headline">⚠️ שאלה נפסלה!</div>
+    <div class="disq-msg" id="disq-msg">החייזרים מאוכזבים...</div>
+    <div class="disq-counter" id="disq-counter"></div>
+    <button class="btn-modal-generic" onclick="closeDisqModal()">המשיכו להילחם ←</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: GAME OVER — חייזרים השתלטו
+══════════════════════════════════════════ -->
+<div id="gameover-modal" class="generic-modal-overlay">
+  <div class="generic-modal-card gameover-card">
+    <div class="alien-invasion-anim" id="invasion-anim"></div>
+    <div class="go-title">👾 החייזרים השתלטו על ההקלטה</div>
+    <div class="go-sub">8 שאלות נפסלו — האנושות לא הצליחה לשכנע</div>
+    <div class="go-laughing" id="go-laughing"></div>
+    <button class="btn-modal-danger" onclick="forceRestart()">נסו שוב מהתחלה</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: ניצחון — חייזרים מאוכזבים
+══════════════════════════════════════════ -->
+<div id="victory-modal" class="generic-modal-overlay">
+  <div class="generic-modal-card victory-card">
+    <div class="vic-aliens" id="vic-aliens"></div>
+    <div class="vic-title">🌍 האנושות ניצלה!</div>
+    <div class="vic-sub">החייזרים עזבו בפנים ארוכות</div>
+    <div class="vic-score" id="vic-score"></div>
+    <button class="btn-modal-victory" onclick="showFinalResult()">ראו את התוצאות</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     STATION SUCCESS MODAL
+══════════════════════════════════════════ -->
+<div id="station-modal" class="station-modal-overlay">
+  <div class="station-modal-card">
+    <div class="modal-sparkles" aria-hidden="true">
+      <span>✦</span><span>★</span><span>✦</span><span>★</span><span>✦</span>
+    </div>
+    <div class="modal-icon" id="modal-icon">🎉</div>
+    <div class="modal-success-label">✅ התחנה הושלמה בהצלחה!</div>
+    <div class="modal-msg" id="modal-msg">...</div>
+    <div class="modal-score" id="modal-score">ניקוד מצטבר: 0</div>
+    <div id="modal-dots" class="station-dots modal-dots-row"></div>
+    <button class="btn-modal" id="modal-btn" onclick="proceedFromSuccess()">
+      לתחנה הבאה ←
     </button>
   </div>
 </div>
 
-<!-- ================================================================
+<!-- ══════════════════════════════════════════
      RESULT SCREEN
-================================================================ -->
+══════════════════════════════════════════ -->
 <div class="screen" id="screen-result">
-
-  <div class="victory-headline">🎇 ניצחתם את החייזרים! 🎇</div>
-
   <div class="result-card">
     <div class="result-banner">
       <div class="result-title" id="res-title">המשימה הסתיימה</div>
       <div class="result-player" id="res-player"></div>
     </div>
-
     <div class="result-body">
       <div class="res-bar-wrap">
         <div class="res-bar-lbl">
           <span class="ll">ציון כולל</span>
           <span class="lr" id="res-pct">—</span>
         </div>
-        <div class="res-track">
-          <div class="res-fill" id="res-fill" style="width:0%"></div>
-        </div>
+        <div class="res-track"><div class="res-fill" id="res-fill" style="width:0%"></div></div>
       </div>
       <div class="stat-row">
         <span class="stat-lbl">תשובות נכונות</span>
-        <span class="stat-val" style="color:var(--glow)"  id="res-correct">—</span>
+        <span class="stat-val" style="color:var(--glow)" id="res-correct">—</span>
       </div>
       <div class="stat-row">
         <span class="stat-lbl">שגיאות</span>
-        <span class="stat-val" style="color:var(--red)"   id="res-wrong">—</span>
+        <span class="stat-val" style="color:var(--red)" id="res-wrong">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-lbl">שאלות שנפסלו</span>
+        <span class="stat-val" style="color:var(--amber)" id="res-disq">—</span>
       </div>
       <div class="stat-row">
         <span class="stat-lbl">ניקוד סופי</span>
         <span class="stat-val" style="color:var(--amber)" id="res-score">—</span>
       </div>
     </div>
-
     <div class="result-footer">
-      <button class="btn-r"   onclick="restart()">נסו שוב</button>
-      <button class="btn-r ol" onclick="shareResult()">שתפו</button>
+      <button class="btn-r" onclick="restart()">שחקו שוב</button>
+      <button class="btn-r ol" onclick="shareResult()">שתפו תוצאה</button>
     </div>
   </div>
-
 </div>
 
-<!-- Scripts -->
 <script src="js/audio.js"></script>
 <script src="js/questions.js"></script>
 <script src="js/game.js"></script>
 <script src="js/main.js"></script>
-
 </body>
 </html>

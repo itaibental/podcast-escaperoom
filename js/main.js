@@ -1,33 +1,25 @@
-/* ================================================================
-   PROJECT EARTH-CAST — main.js
-   Global bridge + init
-================================================================ */
+/* STUDIO__8 — main.js */
 
-// Intro
-function onNameInput()         { Game.onNameInput(); }
+function onNameInput() {
+  Game.onNameInput();
+  Game.checkShowMode();
+}
+function selectMode(m)         { Game.selectMode(m); }
+function pickStation(i)        { Game.pickStation(i); }
 function tryStart()            { Game.tryStart(); }
-
-// Briefing
 function startStation()        { Game.startStation(); }
-
-// Game
 function nextQ()               { Game.nextQ(); }
 function toggleHints()         { Game.toggleHints(); }
-
-// Success
+function closeDisqModal()      { Game.closeDisqModal(); }
+function forceRestart()        { Game.forceRestart(); }
 function proceedFromSuccess()  { Game.proceedFromSuccess(); }
-
-// Result
+function showFinalResult()     { Game.showFinalResult(); }
 function restart()             { Game.restart(); }
 function shareResult()         { Game.shareResult(); }
-
-// Audio
-function setFVol(v)            { Audio7.setFxVol(v); }
-function toggleFM()            { Audio7.toggleFxMute(); }
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-start').disabled = true;
   document.getElementById('player-name-input')
     .addEventListener('keydown', e => { if (e.key === 'Enter') tryStart(); });
-  console.log('[EARTH-CAST] 6 תחנות × 10 שאלות = 60 שאלות. בהצלחה סוכנים!');
+  console.log('[STUDIO__8] 6 תחנות × 10 שאלות. מקס 8 פסילות. בהצלחה!');
 });

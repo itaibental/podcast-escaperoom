@@ -1,83 +1,155 @@
 /* ================================================================
-   PROJECT EARTH-CAST — game.js
-   לוגיקת משחק: 6 תחנות בסדר קבוע, ללא שאפל
+   STUDIO__8 — game.js
+   חוקים: 2 שגיאות = פסילה | 8 פסולות = Game Over
 ================================================================ */
 
 const Game = (() => {
 
+  /* ── State ── */
   let S = {};
-  let playerName = '';
-  let currentStation = 0; // 0-5
-  let currentQ = 0;       // 0-9 בתוך התחנה
-  let hintIndex = 0;
+  let playerName   = '';
+  let gameMode     = 'full';   // 'full' | 'single'
+  let selectedSingleStation = 0;
+  let currentStation = 0;
+  let currentQ       = 0;
+  let hintIndex      = 0;
+
+  /* Disqualification messages — varied for drama */
+  const DISQ_MSGS = [
+    ['החייזרים מאוכזבים מאוד', 'הם ציפו ליותר מהאנושות. עתיד כדור הארץ בסכנה!'],
+    ['הסיגנל נחלש...', 'ספינת האם קולטת את הכישלון שלכם. הצי הגלקטי מתקרב!'],
+    ['הפיקוד הגלקטי מצחקק', 'האנושות הוכיחה שאינה ראויה. החלל מצפה...'],
+    ['אזעקת חירום ביקום!', 'שגיאות רבות מדי — החייזרים שוקלים מחדש את ה"חסד"'],
+    ['הרמקולים בספינת האם חורקים', 'חצי מהמועצה הגלקטית כבר הצביעה "לחסל". התאמצו!'],
+    ['הקצין הגלקטי הרים גבה', 'עוד כישלון אחד ויורה על הכפתור האדום...'],
+    ['ספינת האם משנה כיוון', 'הם עייפו מלהאזין. שבע שגיאות — עוד אחת ונגמר!'],
+    ['זהירות — גבול קיצוני!', 'זו הפסילה האחרונה לפני שהאנושות תימחק מהמפה!'],
+  ];
 
   function initS() {
     S = {
       totalCorrect: 0,
-      totalWrong: 0,
-      totalScore: 0,
-      attempts: 3,
-      answered: false,
-      tv: 90,
+      totalWrong:   0,
+      totalScore:   0,
+      disqCount:    0,    // שאלות שנפסלו
+      wrongThisQ:   0,    // שגיאות בשאלה הנוכחית
+      attempts:     2,    // מותרות 2 שגיאות לפני פסילה
+      answered:     false,
+      disqualified: false,
+      tv:  90,
       tid: null,
       history: [],
     };
   }
 
-  /* ---- getters for pdf ---- */
-  function getState()       { return S; }
-  function getPlayerName()  { return playerName; }
+  /* ── Getters ── */
+  function getState()          { return S; }
+  function getPlayerName()     { return playerName; }
   function getCurrentStation() { return currentStation; }
-  function getCurrentQ()    { return currentQ; }
+  function getCurrentQ()       { return currentQ; }
 
-  /* ---- Screen routing ---- */
+  /* ── Screen routing ── */
   function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
   }
 
-  /* ---- Name input ---- */
+  /* ── Name input ── */
   function onNameInput() {
     playerName = document.getElementById('player-name-input').value.trim();
-    document.getElementById('btn-start').disabled = playerName.length < 2;
+    const modeVisible = document.getElementById('mode-select').style.display !== 'none';
+    updateStartBtn();
   }
 
-  /* ---- Start game ---- */
+  function updateStartBtn() {
+    const nameOk = playerName.length >= 2;
+    let modeOk = true;
+    if (gameMode === 'single') {
+      modeOk = (selectedSingleStation >= 0 && selectedSingleStation < STATIONS.length);
+    }
+    // mode-select must be visible
+    const modeShown = document.getElementById('mode-select').style.display !== 'none';
+    document.getElementById('btn-start').disabled = !(nameOk && modeShown && modeOk);
+  }
+
+  /* ── Show mode selector after name ≥ 2 chars ── */
+  function checkShowMode() {
+    if (playerName.length >= 2) {
+      document.getElementById('mode-select').style.display = 'block';
+      buildStationPicker();
+    } else {
+      document.getElementById('mode-select').style.display = 'none';
+    }
+    updateStartBtn();
+  }
+
+  function buildStationPicker() {
+    const grid = document.getElementById('station-pick-grid');
+    if (grid.children.length > 0) return; // already built
+    STATIONS.forEach((st, i) => {
+      const card = document.createElement('div');
+      card.className = 'spick-card';
+      card.id = 'spick-' + i;
+      card.style.setProperty('--sc', st.color);
+      card.innerHTML = `<span class="spick-icon">${st.icon}</span><span class="spick-name">${st.title}</span>`;
+      card.onclick = () => pickStation(i);
+      grid.appendChild(card);
+    });
+  }
+
+  function selectMode(mode) {
+    gameMode = mode;
+    document.getElementById('mode-full').classList.toggle('selected', mode === 'full');
+    document.getElementById('mode-single').classList.toggle('selected', mode === 'single');
+    const picker = document.getElementById('station-picker');
+    picker.style.display = mode === 'single' ? 'block' : 'none';
+    if (mode === 'full') updateStartBtn();
+  }
+
+  function pickStation(idx) {
+    selectedSingleStation = idx;
+    document.querySelectorAll('.spick-card').forEach((c, i) => {
+      c.classList.toggle('selected', i === idx);
+    });
+    updateStartBtn();
+  }
+
+  /* ── Try start ── */
   function tryStart() {
     Audio7.init();
     if (playerName.length < 2) return;
-    currentStation = 0;
+    currentStation = gameMode === 'single' ? selectedSingleStation : 0;
     currentQ = 0;
     initS();
     showMissionBriefing();
   }
 
-  /* ---- Mission briefing screen ---- */
+  /* ── Mission briefing ── */
   function showMissionBriefing() {
     const st = STATIONS[currentStation];
-    document.getElementById('brief-icon').textContent  = st.icon;
-    document.getElementById('brief-title').textContent = st.title;
-    document.getElementById('brief-sub').textContent   = st.subtitle;
+    document.getElementById('brief-icon').textContent    = st.icon;
+    document.getElementById('brief-title').textContent   = st.title;
+    document.getElementById('brief-sub').textContent     = st.subtitle;
     document.getElementById('brief-mission').textContent = st.mission;
-    document.getElementById('brief-hint').textContent  = '💡 ' + st.hint_general;
+    document.getElementById('brief-hint').textContent    = '💡 ' + st.hint_general;
     document.getElementById('brief-btn').style.background = st.color;
     document.getElementById('brief-btn').style.color = '#000';
 
-    // station progress dots
     const dots = document.getElementById('station-dots');
     dots.innerHTML = '';
-    STATIONS.forEach((s, i) => {
-      const d = document.createElement('div');
-      d.className = 'sdot' + (i < currentStation ? ' done' : i === currentStation ? ' active' : '');
-      d.style.setProperty('--sc', s.color);
-      d.textContent = s.icon;
-      dots.appendChild(d);
-    });
-
+    if (gameMode === 'full') {
+      STATIONS.forEach((s, i) => {
+        const d = document.createElement('div');
+        d.className = 'sdot' + (i < currentStation ? ' done' : i === currentStation ? ' active' : '');
+        d.style.setProperty('--sc', s.color);
+        d.textContent = s.icon;
+        dots.appendChild(d);
+      });
+    }
     showScreen('screen-brief');
   }
 
-  /* ---- Start station ---- */
+  /* ── Start station ── */
   function startStation() {
     Audio7.sfxLoad();
     const st = STATIONS[currentStation];
@@ -88,38 +160,45 @@ const Game = (() => {
     loadQ();
   }
 
-  /* ---- Load question ---- */
+  /* ── Load question ── */
   function loadQ() {
     const st = STATIONS[currentStation];
     const q  = st.questions[currentQ];
 
     hintIndex = 0;
+    S.wrongThisQ   = 0;
+    S.disqualified = false;
+    S.answered     = false;
+    S.attempts     = 2;
+
     document.getElementById('hint-panel').classList.remove('open');
-    document.getElementById('hint-btn').textContent = '💡 רמז';
+    document.getElementById('hint-btn').textContent  = '💡 גלו רמז';
+    document.getElementById('hint-btn').disabled     = false;
 
     // HUD
-    const globalQ = currentStation * 10 + currentQ + 1;
-    document.getElementById('hud-q-num').textContent  = globalQ + ' / 60';
-    document.getElementById('hud-station-num').textContent = (currentStation + 1) + ' / 6';
-    const pct = ((currentStation * 10 + currentQ) / 60) * 100;
+    const totalQs   = gameMode === 'single' ? 10 : 60;
+    const globalQ   = gameMode === 'single' ? currentQ + 1 : currentStation * 10 + currentQ + 1;
+    document.getElementById('hud-q-num').textContent      = globalQ + ' / ' + totalQs;
+    document.getElementById('hud-station-num').textContent = gameMode === 'single'
+      ? (currentStation + 1) + ''
+      : (currentStation + 1) + ' / 6';
+    const pct = (globalQ - 1) / totalQs * 100;
     document.getElementById('hud-prog-fill').style.width = pct + '%';
-    document.getElementById('hud-score').textContent = S.totalScore;
+    document.getElementById('hud-score').textContent  = S.totalScore;
+    document.getElementById('hud-disq').textContent   = S.disqCount + '/8';
 
-    // color accent
+    // color
     document.documentElement.style.setProperty('--station-color', st.color);
     document.getElementById('riddle-box').style.borderTopColor = st.color;
-    document.getElementById('q-station-badge').textContent    = st.icon + ' ' + st.subtitle;
-    document.getElementById('q-station-badge').style.color    = st.color;
+    document.getElementById('q-station-badge').textContent     = st.icon + ' ' + st.subtitle;
+    document.getElementById('q-station-badge').style.color     = st.color;
     document.getElementById('q-station-badge').style.borderColor = st.color;
 
-    // question content
     document.getElementById('q-scenario').textContent = q.scenario;
     document.getElementById('q-text').textContent     = q.text;
 
-    // render hints (hidden)
     renderHints(q.hints);
 
-    // answers
     const wrap = document.getElementById('answers');
     wrap.innerHTML = '';
     const labels = ['א', 'ב', 'ג', 'ד'];
@@ -132,26 +211,21 @@ const Game = (() => {
       wrap.appendChild(btn);
     });
 
-    // reset fb + next
     const fb = document.getElementById('fb-box');
     fb.className = 'fb-box';
     fb.querySelector('.fb-lbl').textContent = '';
     fb.querySelector('.fb-txt').textContent = '';
     document.getElementById('btn-next').classList.remove('show');
 
-    // reset attempts
-    S.attempts = 3;
-    S.answered = false;
     updateLights();
 
-    // reset timer
     clearInterval(S.tid);
     S.tv = 90;
     updateTimerDisplay();
     startTimer();
   }
 
-  /* ---- Hint system ---- */
+  /* ── Hint system ── */
   function renderHints(hints) {
     const list = document.getElementById('hint-list');
     list.innerHTML = '';
@@ -165,41 +239,22 @@ const Game = (() => {
   }
 
   function revealNextHint() {
-    const st = STATIONS[currentStation];
-    const q  = st.questions[currentQ];
+    const q = STATIONS[currentStation].questions[currentQ];
     const maxHints = Math.min(5, q.hints.length);
     if (hintIndex >= maxHints) return;
-
     const item = document.getElementById('hint-' + hintIndex);
-    if (item) {
-      item.classList.remove('locked');
-      item.innerHTML = '💡 ' + q.hints[hintIndex];
-    }
+    if (item) { item.classList.remove('locked'); item.innerHTML = '💡 ' + q.hints[hintIndex]; }
     hintIndex++;
-
     const btn = document.getElementById('hint-btn');
-    if (hintIndex >= maxHints) {
-      btn.textContent = '💡 כל הרמזים';
-      btn.disabled = true;
-    } else {
-      btn.textContent = '💡 רמז ' + (hintIndex + 1);
-    }
+    if (hintIndex >= maxHints) { btn.textContent = '💡 כל הרמזים גלויים'; btn.disabled = true; }
+    else { btn.textContent = '💡 רמז ' + (hintIndex + 1); }
     document.getElementById('hint-panel').classList.add('open');
   }
 
-  function toggleHints() {
-    const panel = document.getElementById('hint-panel');
-    if (!panel.classList.contains('open')) {
-      revealNextHint();
-    } else {
-      revealNextHint();
-    }
-  }
+  function toggleHints() { revealNextHint(); }
 
-  /* ---- Timer ---- */
-  function startTimer() {
-    S.tid = setInterval(tickTimer, 1000);
-  }
+  /* ── Timer ── */
+  function startTimer() { S.tid = setInterval(tickTimer, 1000); }
 
   function tickTimer() {
     S.tv--;
@@ -217,23 +272,21 @@ const Game = (() => {
   }
 
   function onTimeout() {
-    if (S.answered) return;
+    if (S.answered || S.disqualified) return;
     S.answered = true;
     Audio7.sfxTimeout();
     disableAll();
     const q = STATIONS[currentStation].questions[currentQ];
-    showFB(false, '⏱ TIMEOUT — זמן נגמר', q.explain);
+    showFB(false, '⏱ הזמן נגמר', q.explain);
     document.getElementById('btn-next').classList.add('show');
     S.totalWrong++;
     S.history.push(false);
-    updateLights();
   }
 
-  /* ---- Answer ---- */
+  /* ── Answer ── */
   function doAnswer(idx, btn) {
-    if (S.answered) return;
+    if (S.answered || S.disqualified) return;
     Audio7.init();
-
     const q = STATIONS[currentStation].questions[currentQ];
 
     if (idx === q.correct) {
@@ -241,45 +294,150 @@ const Game = (() => {
       clearInterval(S.tid);
       btn.classList.add('correct');
       Audio7.sfxCorrect();
-
       const pts = 10 + Math.floor(S.tv / 10);
       S.totalScore += pts;
       S.totalCorrect++;
       S.history.push(true);
-
       showFB(true, '✅ נכון! +' + pts + ' נקודות', q.explain);
       document.getElementById('hud-score').textContent = S.totalScore;
       disableAll();
       document.getElementById('btn-next').classList.add('show');
 
     } else {
-      S.attempts--;
-      updateLights();
-      Audio7.sfxWrong();
+      // Wrong answer
+      S.wrongThisQ++;
+      S.attempts = 2 - S.wrongThisQ; // visual
       btn.classList.add('wrong');
       btn.disabled = true;
+      Audio7.sfxWrong();
       document.getElementById('riddle-box').classList.add('shake');
       setTimeout(() => document.getElementById('riddle-box').classList.remove('shake'), 400);
+      updateLights();
 
-      if (S.attempts <= 0) {
+      if (S.wrongThisQ >= 2) {
+        // ── DISQUALIFICATION ──
+        S.disqualified = true;
         S.answered = true;
         clearInterval(S.tid);
         disableAll();
-        showFB(false, '❌ אין ניסיונות', q.explain);
-        document.getElementById('btn-next').classList.add('show');
         S.totalWrong++;
+        S.disqCount++;
         S.history.push(false);
+        showFB(false, '🚫 שאלה נפסלה!', q.explain);
+        document.getElementById('hud-disq').textContent = S.disqCount + '/8';
+        document.getElementById('btn-next').classList.add('show');
+
+        // Show disq modal after short delay
+        setTimeout(() => {
+          if (S.disqCount >= 8) {
+            showGameOverModal();
+          } else {
+            showDisqModal();
+          }
+        }, 600);
+
       } else {
-        showFB(false, '⚠️ שגוי — נסו שוב (' + S.attempts + ' נותרו)', 'בחרו תשובה אחרת...');
+        showFB(false, '⚠️ תשובה שגויה — עוד ניסיון אחד!', 'בחרו תשובה אחרת.');
       }
     }
   }
 
-  /* ---- Next question / station ---- */
+  /* ── Disqualification modal ── */
+  function showDisqModal() {
+    const idx = Math.min(S.disqCount - 1, DISQ_MSGS.length - 1);
+    const [headline, body] = DISQ_MSGS[idx];
+    document.getElementById('disq-msg').innerHTML =
+      '<strong>' + headline + '</strong><br>' + body;
+    document.getElementById('disq-counter').textContent =
+      S.disqCount + ' מתוך 8 שאלות נפסלו — עוד ' + (8 - S.disqCount) + ' ותפסידו!';
+    document.getElementById('disq-modal').classList.add('open');
+    Audio7.sfxWrong();
+  }
+
+  function closeDisqModal() {
+    document.getElementById('disq-modal').classList.remove('open');
+  }
+
+  /* ── Game Over modal ── */
+  function showGameOverModal() {
+    const laughEl = document.getElementById('go-laughing');
+    laughEl.innerHTML = '';
+    // Animated laughing aliens
+    for (let i = 0; i < 8; i++) {
+      const span = document.createElement('span');
+      span.textContent = ['👾','🛸','👽','🤖'][i % 4];
+      span.className = 'laughing-alien';
+      span.style.animationDelay = (i * 0.12) + 's';
+      laughEl.appendChild(span);
+    }
+    // Invasion animation
+    const invEl = document.getElementById('invasion-anim');
+    invEl.innerHTML = '';
+    for (let i = 0; i < 5; i++) {
+      const row = document.createElement('div');
+      row.className = 'invasion-row';
+      row.style.animationDelay = (i * 0.2) + 's';
+      for (let j = 0; j < 6; j++) {
+        const a = document.createElement('span');
+        a.textContent = j % 2 === 0 ? '👾' : '🛸';
+        a.className = 'inv-alien';
+        a.style.animationDelay = (j * 0.08 + i * 0.15) + 's';
+        row.appendChild(a);
+      }
+      invEl.appendChild(row);
+    }
+    document.getElementById('gameover-modal').classList.add('open');
+    Audio7.sfxLose();
+  }
+
+  function forceRestart() {
+    document.getElementById('gameover-modal').classList.remove('open');
+    restart();
+  }
+
+  /* ── Victory modal (aliens disappointed) ── */
+  function showVictoryModal() {
+    const vicEl = document.getElementById('vic-aliens');
+    vicEl.innerHTML = '';
+    // Sad/disappointed aliens walking away
+    const sadAliens = ['😤','😤','👽','🛸','😡'];
+    sadAliens.forEach((a, i) => {
+      const span = document.createElement('span');
+      span.textContent = a;
+      span.className = 'sad-alien-walk';
+      span.style.animationDelay = (i * 0.25) + 's';
+      vicEl.appendChild(span);
+    });
+    document.getElementById('vic-score').textContent =
+      'ניקוד: ' + S.totalScore + ' | ' + S.totalCorrect + ' תשובות נכונות';
+    document.getElementById('victory-modal').classList.add('open');
+    Audio7.sfxVictory();
+  }
+
+  function showFinalResult() {
+    document.getElementById('victory-modal').classList.remove('open');
+    renderResult();
+    showScreen('screen-result');
+  }
+
+  /* ── Next question / station ── */
   function nextQ() {
+    // Close disq modal if open
+    document.getElementById('disq-modal').classList.remove('open');
+
+    const stLen = STATIONS[currentStation].questions.length;
     currentQ++;
-    if (currentQ >= STATIONS[currentStation].questions.length) {
-      // station done
+
+    if (gameMode === 'single') {
+      if (currentQ >= stLen) {
+        endGame();
+      } else {
+        loadQ();
+      }
+      return;
+    }
+
+    if (currentQ >= stLen) {
       currentQ = 0;
       showStationSuccess();
     } else {
@@ -287,23 +445,36 @@ const Game = (() => {
     }
   }
 
+  /* ── Station success modal ── */
   function showStationSuccess() {
     clearInterval(S.tid);
-    const st = STATIONS[currentStation];
-    document.getElementById('success-icon').textContent = st.icon;
-    document.getElementById('success-msg').textContent  = st.success_msg;
-    document.getElementById('success-score').textContent = 'ניקוד: ' + S.totalScore;
-    document.getElementById('success-btn').style.background = st.color;
-
+    const st    = STATIONS[currentStation];
     const isLast = currentStation === STATIONS.length - 1;
-    document.getElementById('success-btn').textContent =
-      isLast ? '🚀 סיום המשימה!' : 'תחנה הבאה ←';
 
+    document.getElementById('modal-icon').textContent  = st.icon;
+    document.getElementById('modal-msg').textContent   = st.success_msg;
+    document.getElementById('modal-score').textContent = 'ניקוד מצטבר: ' + S.totalScore;
+    document.getElementById('modal-btn').textContent   = isLast ? '🚀 לסיום המשימה!' : 'לתחנה הבאה ←';
+    document.getElementById('modal-btn').style.background = st.color;
+
+    const dots = document.getElementById('modal-dots');
+    dots.innerHTML = '';
+    STATIONS.forEach((s, i) => {
+      const d = document.createElement('div');
+      d.className = 'sdot' + (i <= currentStation ? ' done' : '');
+      d.style.setProperty('--sc', s.color);
+      d.textContent = s.icon;
+      dots.appendChild(d);
+    });
+
+    const overlay = document.getElementById('station-modal');
+    overlay.style.setProperty('--modal-color', st.color);
+    overlay.classList.add('open');
     Audio7.sfxVictory();
-    showScreen('screen-success');
   }
 
   function proceedFromSuccess() {
+    document.getElementById('station-modal').classList.remove('open');
     currentStation++;
     if (currentStation >= STATIONS.length) {
       endGame();
@@ -312,47 +483,42 @@ const Game = (() => {
     }
   }
 
-  /* ---- End game ---- */
+  /* ── End game ── */
   function endGame() {
     clearInterval(S.tid);
-    const total = STATIONS.length * 10;
+    const total = gameMode === 'single' ? 10 : STATIONS.length * 10;
     const pct   = Math.round(S.totalCorrect / total * 100);
 
-    document.getElementById('res-title').textContent  = pct >= 80 ? '🎇 ניצחתם!' : '🎙️ המשימה הסתיימה';
-    document.getElementById('res-player').textContent = playerName;
+    if (pct >= 80) {
+      // Victory — show aliens disappointed
+      showVictoryModal();
+    } else {
+      renderResult();
+      Audio7.sfxLose();
+      showScreen('screen-result');
+    }
+  }
+
+  function renderResult() {
+    const total = gameMode === 'single' ? 10 : STATIONS.length * 10;
+    const pct   = Math.round(S.totalCorrect / total * 100);
+
+    document.getElementById('res-title').textContent   = pct >= 80 ? '🎇 ניצחתם!' : '🎙️ המשימה הסתיימה';
+    document.getElementById('res-player').textContent  = playerName;
     document.getElementById('res-correct').textContent = S.totalCorrect + ' / ' + total;
     document.getElementById('res-wrong').textContent   = S.totalWrong;
+    document.getElementById('res-disq').textContent    = S.disqCount;
     document.getElementById('res-score').textContent   = S.totalScore;
 
     const fill = document.getElementById('res-fill');
     fill.style.width = '0%';
     fill.style.background = pct >= 80 ? '#00ff88' : pct >= 50 ? '#ffaa00' : '#ff4444';
     setTimeout(() => { fill.style.width = pct + '%'; }, 100);
-
     document.getElementById('res-pct').textContent = pct + '%';
     document.getElementById('res-pct').style.color = pct >= 80 ? '#00ff88' : pct >= 50 ? '#ffaa00' : '#ff4444';
-
-    if (pct >= 80) {
-      triggerVictoryAnimation();
-    } else {
-      Audio7.sfxLose();
-      showScreen('screen-result');
-    }
   }
 
-  function triggerVictoryAnimation() {
-    // Black screen flash then epic result
-    document.body.style.background = '#000';
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    setTimeout(() => {
-      document.body.style.background = '';
-      Audio7.sfxVictory();
-      showScreen('screen-result');
-      document.getElementById('screen-result').classList.add('victory');
-    }, 800);
-  }
-
-  /* ---- Helpers ---- */
+  /* ── Helpers ── */
   function disableAll() {
     document.querySelectorAll('.ans-btn').forEach(b => { b.disabled = true; });
   }
@@ -365,49 +531,55 @@ const Game = (() => {
   }
 
   function updateLights() {
+    // 2 lights = 2 allowed mistakes
+    const remaining = 2 - S.wrongThisQ;
     document.querySelectorAll('.light').forEach((l, i) => {
-      l.classList.toggle('used', i >= S.attempts);
+      // show only 2 lights (index 0,1); index 2 always off
+      if (i === 2) { l.style.display = 'none'; return; }
+      l.classList.toggle('used', i >= remaining);
     });
   }
 
-  /* ---- Restart ---- */
+  /* ── Restart ── */
   function restart() {
+    document.querySelectorAll('.generic-modal-overlay, .station-modal-overlay')
+      .forEach(m => m.classList.remove('open'));
     document.getElementById('screen-result').classList.remove('victory');
-    currentStation = 0;
-    currentQ = 0;
+    currentStation = 0; currentQ = 0;
     initS();
     document.getElementById('player-name-input').value = '';
     playerName = '';
+    gameMode   = 'full';
     document.getElementById('btn-start').disabled = true;
+    document.getElementById('mode-select').style.display = 'none';
+    document.getElementById('mode-full').classList.remove('selected');
+    document.getElementById('mode-single').classList.remove('selected');
+    document.getElementById('station-picker').style.display = 'none';
+    document.querySelectorAll('.spick-card').forEach(c => c.classList.remove('selected'));
     showScreen('screen-intro');
   }
 
   function shareResult() {
-    const total = STATIONS.length * 10;
+    const total = gameMode === 'single' ? 10 : STATIONS.length * 10;
     const pct   = Math.round(S.totalCorrect / total * 100);
-    const txt   = playerName + ' השיג ' + pct + '% במשחק "מבצע קול האדמה"!\n' +
+    const txt   = playerName + ' השיג ' + pct + '% ב-STUDIO__8!\n' +
       'ניקוד: ' + S.totalScore + ' | ' + S.totalCorrect + '/' + total + ' נכונות 🎙️🚀';
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(txt).then(() => alert('הטקסט הועתק! 📋'));
+      navigator.clipboard.writeText(txt).then(() => alert('הטקסט הועתק ללוח! 📋'));
     } else {
-      prompt('העתיקו:', txt);
+      prompt('העתיקו את הטקסט:', txt);
     }
   }
 
-  /* ---- Public API ---- */
+  /* ── Public API ── */
   return {
-    onNameInput,
-    tryStart,
-    startStation,
-    nextQ,
+    onNameInput, checkShowMode, selectMode, pickStation,
+    tryStart, startStation, nextQ,
     toggleHints,
-    proceedFromSuccess,
-    restart,
-    shareResult,
-    getState,
-    getPlayerName,
-    getCurrentStation,
-    getCurrentQ,
+    closeDisqModal, forceRestart,
+    proceedFromSuccess, showFinalResult,
+    restart, shareResult,
+    getState, getPlayerName, getCurrentStation, getCurrentQ,
   };
 
 })();
